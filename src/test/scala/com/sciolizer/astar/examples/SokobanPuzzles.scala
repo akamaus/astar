@@ -46,7 +46,7 @@ class SokobanPuzzles extends FunSuite {
       "XXXX  \n" +
       "X GX  \n" +
       "X  XXX\n" +
-      "X    X\n" +
+      "XG   X\n" +
       "X    X\n" +
       "X  XXX\n" +
       "XXXX  ")

@@ -2,8 +2,7 @@ package com.sciolizer.astar.examples
 
 import org.scalatest.FunSuite
 import splice.{Modification, Chain, SpliceIt, Plain}
-import splice.Splice.{SpliceDomain, LeftChild, RightChild}
-import com.sciolizer.astar.AStar.Domain
+import splice.Splice.{LeftChild, RightChild}
 
 /**
  * Created with IntelliJ IDEA.
@@ -57,11 +56,11 @@ class SpliceSuite extends FunSuite {
       SpliceIt(from, List()).apply(chain1)
     }
   }
-
+    /*
   test("No legal moves implies empty children") {
     val domain = new SpliceDomain(chain1)
     assert(domain.children(Plain() - Plain().single) === Map())
-  }
+  }   */
 
   test("Indices") {
     assert(chain1.indices.toSet ===
@@ -84,7 +83,7 @@ class SpliceSuite extends FunSuite {
         List(RightChild(), LeftChild(), LeftChild()),
         List(RightChild(), RightChild())))
   }
-
+            /*
   test("Legal moves for V") {
     val domain = new SpliceDomain(chain1)
     val three: Chain = Plain() - (Plain() - Plain().single)
@@ -95,5 +94,5 @@ class SpliceSuite extends FunSuite {
       SpliceIt(List(LeftChild()), List(RightChild())) -> (v, 1.0),
       SpliceIt(List(RightChild()), List(LeftChild())) -> (v, 1.0))
     assert(domain.children(v) === expected)
-  }
+  }         */
 }

@@ -1,7 +1,7 @@
 package com.sciolizer.astar.examples.sokoban
 
 import com.sciolizer.astar.AStar
-import com.sciolizer.astar.AStar.{Admissable, HeuristicGuarantee, Domain}
+import com.sciolizer.astar.AStar.{SearchDomain, Admissable, HeuristicGuarantee}
 import collection.mutable
 import java.util.Comparator
 
@@ -14,16 +14,16 @@ import java.util.Comparator
 object Sokoban {
 
   def solve(board: Board): List[Direction] = {
-    val domain = new SokobanDomain(makeDistanceMap(board.squares, board.goals))
+    val domain = new SokobanDomain(board.squares, board.goals, makeDistanceMap(board.squares, board.goals))
     AStar.search(board, domain)._1
   }
 
   def makeDistanceMap(board: Vector[Vector[Square]], goals: Set[Point]): Map[Point, Int] = {
-    object DistanceDomain extends Domain[Point, Direction, Int] {
+    object DistanceDomain extends SearchDomain[Point, Direction, Int] {
       def children(s: Point): Map[Direction, (Point, Int)] =
         (for (d <- Direction.all; if d.toPoint(s).of(board) == Some(Blank)) yield (d, (d.toPoint(s), 1))).toMap
       def heuristicGuarantee: HeuristicGuarantee = Admissable()
-      def heuristicFunction(s: Point): Double = goals.map(_.taxicab(s)).min
+      def heuristicFunction(s: Point): Int = goals.map(_.taxicab(s)).min
       def isGoal(s: Point): Boolean = goals.contains(s)
       def zero: Int = 0
       def add(m1: Int, m2: Int): Int = m1 + m2
@@ -34,8 +34,8 @@ object Sokoban {
     }
 
     var ret: Map[Point, Int] = Map.empty
-    for (r <- board.size) {
-      for (c <- board.size) {
+    for (r <- 0 until board.size) {
+      for (c <- 0 until board.size) {
         val point: Point = Point(r, c)
         ret = ret.updated(point, if (board(r)(c) == Wall) {
           Int.MaxValue
@@ -49,14 +49,14 @@ object Sokoban {
 }
 
 class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap: Map[Point, Int])
-  extends Domain[Board, Direction, Distance] {
+  extends SearchDomain[Board, Direction, Distance] {
 
   case class Changeable(player: Point, boxes: Set[Point])
 
   val memoized: mutable.Map[Changeable, Distance] = mutable.Map.empty
 
   def children(s: Board): Map[Direction, (Board, Distance)] =
-    (for (d <- Direction.all; Some(b) <- d.toBoard(s)) yield ((d, (b,  Distance(if (d.movesBox(s)) 1 else 0, 0))))).toMap
+    (for (d <- Direction.all; if d.toBoard(s).isDefined) yield ((d, (d.toBoard(s).get,  Distance(if (d.movesBox(s)) 1 else 0, 0))))).toMap
   def heuristicGuarantee: HeuristicGuarantee = Admissable()
   def isGoal(s: Board): Boolean = s.goals == s.boxes
   def zero: Distance = Distance(0, 0)

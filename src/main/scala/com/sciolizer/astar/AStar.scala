@@ -21,17 +21,20 @@ object AStar {
   case class Consistent() extends HeuristicGuarantee { }
   abstract class HeuristicGuarantee { }
 
-  trait Domain[State, Action, Measure] {
-    def children(s: State): Map[Action, (State, Measure)]
-    def heuristicGuarantee: HeuristicGuarantee
-    def heuristicFunction(s: State): Measure
-    def isGoal(s: State): Boolean
+  trait MeasureDomain[Measure] {
     def zero: Measure
     def add(m1: Measure, m2: Measure): Measure
     def comparator: Comparator[Measure]
   }
 
-  def search[State, Act, Measure](start: State, domain: Domain[State, Act, Measure]): (List[Act], Measure) = {
+  trait SearchDomain[State, Action, Measure] extends MeasureDomain[Measure] {
+    def children(s: State): Map[Action, (State, Measure)]
+    def heuristicGuarantee: HeuristicGuarantee
+    def heuristicFunction(s: State): Measure
+    def isGoal(s: State): Boolean
+  }
+
+  def search[State, Act, Measure](start: State, domain: SearchDomain[State, Act, Measure]): (List[Act], Measure) = {
     val search = domain.heuristicGuarantee match {
       case Admissable() => new GraphSearch()
       case Consistent() => new TreeSearch()
@@ -39,22 +42,10 @@ object AStar {
     case class ActionWrapper(action: Act) extends Action {
       def isNoOp: Boolean = false
     }
-    val memoizedCost: mutable.Map[Node, Measure] = mutable.Map.empty
-    def cost(n: Node): Measure = {
-      memoizedCost.get(n) match {
-        case None =>
-          val ret = if (n.isRootNode) {
-            domain.zero
-          } else {
-            domain.add(cost(n.getParent), domain.children(n.getState.asInstanceOf[State])(n.getAction.asInstanceOf[ActionWrapper].action)._2)
-          }
-          memoizedCost(n) = ret
-          ret
-        case Some(x) => x
-      }
-    }
+    def incCost(n: Node): Measure = domain.children(n.getState.asInstanceOf[State])(n.getAction.asInstanceOf[ActionWrapper].action)._2
+    val costCalculator = new CostCalculator[Measure](domain, incCost)
     def priority(n: Node): Measure = {
-      domain.add(cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
+      domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
     }
     val comparator: Comparator[Node] = new Comparator[Node] {
       def compare(o1: Node, o2: Node): Int = domain.comparator.compare(priority(o1), priority(o2))
@@ -89,5 +80,22 @@ object AStar {
       distance = domain.add(distance, inc)
     }
     (acts, distance)
+  }
+
+  class CostCalculator[Measure](domain: MeasureDomain[Measure], incCost: Node => Measure) {
+    val memoizedCost: mutable.Map[Node, Measure] = mutable.Map.empty
+    def cost(n: Node): Measure = {
+      memoizedCost.get(n) match {
+        case None =>
+          val ret = if (n.isRootNode) {
+            domain.zero
+          } else {
+            domain.add(cost(n.getParent), incCost(n))
+          }
+          memoizedCost(n) = ret
+          ret
+        case Some(x) => x
+      }
+    }
   }
 }

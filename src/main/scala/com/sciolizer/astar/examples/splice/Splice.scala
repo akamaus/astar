@@ -36,10 +36,11 @@ object Splice {
   }
 
   def solve(start: Chain, goal: Chain): List[Modification] = {
-    AStar.search(start, new SpliceDomain(goal))
+    throw new RuntimeException("not implemented")
+//    AStar.search(start, null) // new SpliceDomain(goal))
   }
-
-  class SpliceDomain(goal: Chain) extends AStar.Domain[Chain, Modification] {
+                                                                               /*
+  class SpliceDomain(goal: Chain) extends AStar.Domain[Chain, Modification, Int] {
     def children(s: Chain): Map[Modification, (Chain, Double)] = {
       (for (
         f <- s.indices.diff(List(List.empty));
@@ -55,7 +56,7 @@ object Splice {
     def heuristicFunction(s: Chain): Double = 0.0 // todo
 
     def isGoal(s: Chain): Boolean = s.equals(goal)
-  }
+  }            */
 }
 
 abstract class Link {
