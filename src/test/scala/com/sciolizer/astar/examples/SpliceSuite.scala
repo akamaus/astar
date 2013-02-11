@@ -1,7 +1,7 @@
 package com.sciolizer.astar.examples
 
 import org.scalatest.FunSuite
-import splice.{SpliceIt, Plain}
+import splice.{Modification, Chain, SpliceIt, Plain}
 import splice.Splice.{SpliceDomain, LeftChild, RightChild}
 import com.sciolizer.astar.AStar.Domain
 
@@ -61,5 +61,39 @@ class SpliceSuite extends FunSuite {
   test("No legal moves implies empty children") {
     val domain = new SpliceDomain(chain1)
     assert(domain.children(Plain() - Plain().single) === Map())
+  }
+
+  test("Indices") {
+    assert(chain1.indices.toSet ===
+      Set(
+        List(),
+        List(LeftChild()),
+        List(RightChild()),
+        List(RightChild(), LeftChild())
+      ))
+  }
+
+  test("Extended indices") {
+    assert(chain1.extendedIndices.toSet ===
+      Set(
+        List(),
+        List(LeftChild()),
+        List(LeftChild(), LeftChild()),
+        List(RightChild()),
+        List(RightChild(), LeftChild()),
+        List(RightChild(), LeftChild(), LeftChild()),
+        List(RightChild(), RightChild())))
+  }
+
+  test("Legal moves for V") {
+    val domain = new SpliceDomain(chain1)
+    val three: Chain = Plain() - (Plain() - Plain().single)
+    val v: Chain = Plain().single + Plain().single
+    val expected: Map[Modification, (Chain, Double)] = Map(
+      SpliceIt(List(LeftChild()), List(RightChild(), LeftChild())) -> (three, 1.0),
+      SpliceIt(List(RightChild()), List(LeftChild(), LeftChild())) -> (three, 1.0),
+      SpliceIt(List(LeftChild()), List(RightChild())) -> (v, 1.0),
+      SpliceIt(List(RightChild()), List(LeftChild())) -> (v, 1.0))
+    assert(domain.children(v) === expected)
   }
 }

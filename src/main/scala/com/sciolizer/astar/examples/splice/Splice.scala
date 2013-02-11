@@ -3,7 +3,7 @@ package com.sciolizer.astar.examples.splice
 import com.sciolizer.astar._
 import collection.GenTraversableOnce
 import com.sciolizer.astar.AStar.HeuristicGuarantee
-import examples.splice.Splice.Child
+import examples.splice.Splice.{RightChild, LeftChild, Child}
 
 /**
  * Created with IntelliJ IDEA.
@@ -41,10 +41,9 @@ object Splice {
 
   class SpliceDomain(goal: Chain) extends AStar.Domain[Chain, Modification] {
     def children(s: Chain): Map[Modification, (Chain, Double)] = {
-      val spots: List[LinkIndex] = s.indices.diff(List(List.empty))
       (for (
-        f <- spots;
-        t <- spots if f != t;
+        f <- s.indices.diff(List(List.empty));
+        t <- s.extendedIndices.diff(List(List.empty)) if f != t;
         child <- SpliceIt(f, t).apply(s).toList
         if child.isLegal)
       yield { (SpliceIt(f, t), (child, 1.0)) }
@@ -74,9 +73,26 @@ case class Plain() extends Link {
 case class Chain(link: Link, children: List[Chain] /* length 0, 1, or 2 */) {
   def isLegal: Boolean = if (children.isEmpty) true else children.length <= 2 && children.forall(_.isLegal)
   def +(that: Chain): Chain = Chain(Plain(), List(this, that))
-  lazy val indices: List[Splice.LinkIndex] = {
-    def attach(ci: (Chain, Int)): List[Splice.LinkIndex] = ci._1.indices.map(x => (Child.fromIndex(ci._2) +: x))
-    (List(List.empty) ++ children.zipWithIndex.flatMap(attach)).toList
+  // All pegs in the chain
+  lazy val indices: List[Splice.LinkIndex] = getIndices(c => c.indices, List(List.empty))
+  // All potential pegs in the chain (includes places where a peg can be added)
+
+  // Starting to think I should have had a different data type for target locations
+  lazy val extendedIndices: List[Splice.LinkIndex] = {
+    val here = List(List.empty) ++ (if (children.isEmpty) {
+      List(List(LeftChild()))
+    } else if (children.size == 1) {
+      List(List(RightChild()))
+    } else {
+      List.empty
+    })
+    getIndices(c => c.extendedIndices, here)
+  }
+  private def getIndices(recurse: Chain => List[Splice.LinkIndex], here: List[Splice.LinkIndex]): List[Splice.LinkIndex] = {
+    here ++ (for (
+      (c, i) <- children.zipWithIndex;
+      z <- recurse(c).map(x => (Child.fromIndex(i) +: x)))
+    yield z).toList
   }
 }
 
