@@ -5,7 +5,6 @@ import aima.core.search.framework._
 import java.util
 import aima.core.agent
 import agent.Action
-import aima.core.search.nondeterministic.ResultsFunction
 import collection.JavaConversions._
 
 /**
@@ -14,7 +13,12 @@ import collection.JavaConversions._
  * Date: 2/9/13
  * Time: 6:42 PM
  */
+
 object AStar {
+
+  case class Admissable() extends HeuristicGuarantee { }
+  case class Consistent() extends HeuristicGuarantee { }
+  abstract class HeuristicGuarantee { }
 
   trait Domain[State, Action] {
     def children(s: State): Map[Action, (State, Double)]
@@ -59,8 +63,4 @@ object AStar {
     val actions = ass.search(p)
     List.empty ++ actions.map(_.asInstanceOf[ActionWrapper].action)
   }
-
-  abstract class HeuristicGuarantee
-  case class Admissable() extends HeuristicGuarantee
-  case class Consistent() extends HeuristicGuarantee
 }

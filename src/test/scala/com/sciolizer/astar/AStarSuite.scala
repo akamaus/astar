@@ -1,7 +1,7 @@
 package com.sciolizer.astar
 
 import org.scalatest.FunSuite
-import com.sciolizer.astar.AStar.{Admissable, HeuristicGuarantee, Domain}
+import com.sciolizer.astar.AStar.{HeuristicGuarantee, Admissable, Domain}
 
 /**
  * Created with IntelliJ IDEA.
