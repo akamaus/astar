@@ -26,6 +26,9 @@ class SokobanPuzzles extends FunSuite {
     // This doesn't make sense: Priority is Distance(5,3) for List(right, right, down, left, up, left, down)
     // This puts the box in the right side of the bottommost row, which, even though it's immovable, should
     // be calculated as 3 moves away from a goal, not 5 moves. Also, player moves should ALWAYS be > than box moves.
+
+    // Priority is Finite(3,3) for List(right, right, down, left, left, down, left, up, right, up, up, left)
+    // ^ This doesn't make any sense. That's a SOLUTION!
   }
 
   val microban1Board =

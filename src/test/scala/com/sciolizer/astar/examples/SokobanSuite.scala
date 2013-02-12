@@ -16,19 +16,18 @@ import sokoban.Point
  * Time: 1:54 PM
  */
 class SokobanSuite extends FunSuite {
-  val microban1Board =
+  val (microban1Board, microban1Goals) = SokobanSuite.makeGrid(
     "XXXX  \n" +
     "X GX  \n" +
     "X  XXX\n" +
     "XG   X\n" +
     "X    X\n" +
     "X  XXX\n" +
-    "XXXX  "
-
+    "XXXX  ")
+  /*
   test("Distance map") {
-    val (grid, goals) = SokobanSuite.makeGrid(microban1Board)
     println("grid size: " + grid.size)
-    val distanceMap: Map[Point, Int] = Sokoban.makeDistanceMap(grid, goals)
+    val distanceMap: Map[Point, Int] = Sokoban.makeDistanceMap(microban1Board, microban1Goals)
     for (r <- 0 until 7) {
       for (c <- 0 until 6) {
         print(distanceMap(Point(r, c)) + "\t")
@@ -37,37 +36,39 @@ class SokobanSuite extends FunSuite {
     }
     println()
     println(distanceMap)
-  }
+  }            */
 
   test("Move down") {
-    val (grid, goals) = SokobanSuite.makeGrid(microban1Board)
-    val next = Down.toBoard(Board(grid, goals, Set(), Point(3, 2))).get
+    val next = Down.toBoard(Board(microban1Board, microban1Goals, Set(), Point(3, 2))).get
     assert(next.player === Point(4, 2))
   }
 
   test("Push box down") {
-    val (grid, goals) = SokobanSuite.makeGrid(microban1Board)
-    val next = Down.toBoard(Board(grid, goals, Set(Point(4, 2)), Point(3, 2))).get
+    val next = Down.toBoard(Board(microban1Board, microban1Goals, Set(Point(4, 2)), Point(3, 2))).get
     assert(next.player === Point(4, 2))
     assert(next.boxes === Set(Point(5, 2)))
   }
 
   test("Move into wall") {
-    val (grid, goals) = SokobanSuite.makeGrid(microban1Board)
-    val next = Down.toBoard(Board(grid, goals, Set(), Point(5, 2)))
+    val next = Down.toBoard(Board(microban1Board, microban1Goals, Set(), Point(5, 2)))
     assert(next === None)
   }
 
   test("Push box into wall") {
-    val (grid, goals) = SokobanSuite.makeGrid(microban1Board)
-    val next = Down.toBoard(Board(grid, goals, Set(Point(5, 2)), Point(4, 2)))
+    val next = Down.toBoard(Board(microban1Board, microban1Goals, Set(Point(5, 2)), Point(4, 2)))
     assert(next === None)
   }
 
   test("Push box into box") {
-    val (grid, goals) = SokobanSuite.makeGrid(microban1Board)
-    val next = Down.toBoard(Board(grid, goals, Set(Point(4, 2), Point(5, 2)), Point(3, 2)))
+    val next = Down.toBoard(Board(microban1Board, microban1Goals, Set(Point(4, 2), Point(5, 2)), Point(3, 2)))
     assert(next === None)
+  }
+
+  test("Half of microban1 solution") {
+    val init = Board(microban1Board, microban1Goals, Set(Point(4, 3)), Point(3, 2))
+    val end = List(Right, Right, Down, Left, Left, Down, Left, Up).foldLeft(init)((b, a) => a.toBoard(b).get)
+    assert(end.boxes === Set(Point(3, 1)))
+    assert(end.player === Point(4, 1))
   }
 }
 
