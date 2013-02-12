@@ -121,7 +121,7 @@ class AStarSuite extends FunSuite {
         } else {
           s - 26
         }
-        println("heuristic for " + s + ": " + ret)
+//        println("heuristic for " + s + ": " + ret)
         ret
       }
 

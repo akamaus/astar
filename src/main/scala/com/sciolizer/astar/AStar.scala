@@ -56,7 +56,7 @@ object AStar {
     val costCalculator = new CostCalculator[Measure](domain, incCost)
     def priority(n: Node): Measure = {
       val ret = domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
-      println("priority " + nodeToString(n) + ": " + ret)
+//      println("priority " + nodeToString(n) + ": " + ret)
       ret
     }
     val comparator: Comparator[Node] = new Comparator[Node] {
@@ -64,7 +64,7 @@ object AStar {
         val p1: Measure = priority(o1)
         val p2: Measure = priority(o2)
         val ret = domain.comparator.compare(p1, p2)
-        println("comparing " + p1 + " and " + p2 + ": " + ret)
+//        println("comparing " + p1 + " and " + p2 + ": " + ret)
         ret
       }
     }
@@ -73,7 +73,7 @@ object AStar {
         val ret = new GraphSearch() {
           override def expandNode(node: Node, problem: Problem): util.List[Node] = {
             val ret = super.expandNode(node, problem)
-            println("expansion of " + nodeToString(node) + ": " + ret.map(nodeToString(_)))
+//            println("expansion of " + nodeToString(node) + ": " + ret.map(nodeToString(_)))
             ret
           }
         }
@@ -130,7 +130,7 @@ object AStar {
           ret
         case Some(x) => x
       }
-      println(nodeToString(n) + ": " + ret)
+//      println(nodeToString(n) + ": " + ret)
       ret
     }
   }
