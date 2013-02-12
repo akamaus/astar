@@ -55,7 +55,7 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
   def children(s: Board): Map[Direction, (Board, Distance)] =
     (for (d <- Direction.all; if d.toBoard(s).isDefined) yield ((d, (d.toBoard(s).get,  Finite(if (d.movesBox(s)) 1 else 0, 0))))).toMap
   def heuristicGuarantee: HeuristicGuarantee = Admissable()
-  def isGoal(s: Board): Boolean = s.goals == s.boxes
+  def isGoal(s: Board): Boolean = s.boxes.subsetOf(s.goals)
   def zero: Distance = Finite(0, 0)
   def add(m1: Distance, m2: Distance): Distance = {
     (m1, m2) match {
