@@ -58,7 +58,7 @@ object AStar {
       val ret = domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
 //      println("priority " + nodeToString(n) + ": " + ret)
       val path: util.List[Node] = n.getPathFromRoot
-      println("path from root: " + path)
+//      println("path from root: " + path)
       def doesSomething(n: Node): Boolean = {
         val action: Action = n.getAction
 //        if (action == null) {
@@ -67,7 +67,7 @@ object AStar {
         action != null && !action.isNoOp
       }
       val filteredPath: List[Node] = path.toList.filter(doesSomething)
-      println("Priority is " + ret + " for " + filteredPath.map(_.getAction.asInstanceOf[ActionWrapper].action))
+//      println("Priority is " + ret + " for " + filteredPath.map(_.getAction.asInstanceOf[ActionWrapper].action))
       ret
     }
     val comparator: Comparator[Node] = new Comparator[Node] {
@@ -110,7 +110,7 @@ object AStar {
     // for tracking metrics, which we aren't using anyway.
     // Just don't call Node.pathCost, since it will always be 0.0
     val stepCostFunction = new StepCostFunction {
-      var limit = 100
+      var limit = 200
       def c(s: Any, a: Action, sDelta: Any): Double = {
         limit -= 1
         if (limit <= 0) {
