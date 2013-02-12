@@ -17,6 +17,15 @@ class SokobanPuzzles extends FunSuite {
     println(Sokoban.solve(Board(grid, goals, boxes, player)))
   }
 
+  val microban1Board =
+    "XXXX  \n" +
+      "X GX  \n" +
+      "X  XXX\n" +
+      "XG   X\n" +
+      "X    X\n" +
+      "X  XXX\n" +
+      "XXXX  "
+
   test("Microban 1") {
     solve(Point(3, 2), Set(Point(3, 1), Point(4, 3)), microban1Board)
   }
@@ -31,12 +40,14 @@ class SokobanPuzzles extends FunSuite {
     // ^ This doesn't make any sense. That's a SOLUTION!
   }
 
-  val microban1Board =
-    "XXXX  \n" +
-    "X GX  \n" +
-    "X  XXX\n" +
-    "XG   X\n" +
-    "X    X\n" +
-    "X  XXX\n" +
-    "XXXX  "
+  val microban2Board =
+    "    \n" +
+    " X  \n" +
+    "  G \n" +
+    " GG \n" +
+    "    "
+
+  test("Microban 2") {
+    solve(Point(1, 2), Set(Point(2, 1), Point(2, 2), Point(3, 2)), microban2Board)
+  }
 }
