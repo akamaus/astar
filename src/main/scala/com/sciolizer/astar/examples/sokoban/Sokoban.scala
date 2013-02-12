@@ -53,7 +53,7 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
   val memoized: mutable.Map[Changeable, Distance] = mutable.Map.empty
 
   def children(s: Board): Map[Direction, (Board, Distance)] =
-    (for (d <- Direction.all; if d.toBoard(s).isDefined) yield ((d, (d.toBoard(s).get,  Finite(if (d.movesBox(s)) 1 else 0, 0))))).toMap
+    (for (d <- Direction.all; if d.toBoard(s).isDefined) yield ((d, (d.toBoard(s).get,  Finite(if (d.movesBox(s)) 1 else 0, 1))))).toMap
   def heuristicGuarantee: HeuristicGuarantee = Admissable()
   def isGoal(s: Board): Boolean = s.boxes.subsetOf(s.goals)
   def zero: Distance = Finite(0, 0)
@@ -63,7 +63,7 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
       case (_, Infinite()) => Infinite()
       case (Finite(bm1, pm1), Finite(bm2, pm2)) => {
         val boxMoves: Int = bm1 + bm2
-        Finite(boxMoves, pm1 max pm2 max boxMoves)
+        Finite(boxMoves, pm1 + pm2)
       }
     }
   }
