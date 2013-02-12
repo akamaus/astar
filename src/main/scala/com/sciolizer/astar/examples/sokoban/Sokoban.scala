@@ -122,8 +122,29 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
                 case None =>
                   print("inner miss; ")
                   val ret = AStar.search(subBoard, this) match {
-                    case None => Infinite()
-                    case Some((_, d)) => d
+                    case None =>
+                      memoized(key) = Infinite()
+                      Infinite()
+                    case Some((steps, d)) =>
+                      var curKey = key
+                      memoized(key) = d
+                      var Finite(boxMoves, playerMoves) = d
+                      var curBoard = s.copy(boxes = curKey.boxes, player = curKey.player)
+                      for (direction <- steps) {
+                        if (direction.movesBox(curBoard)) {
+                          boxMoves -= 1
+                        }
+                        playerMoves -= 1
+                        curBoard = direction.toBoard(curBoard).get
+                        memoized(Changeable(curBoard.player, curBoard.boxes)) = Finite(boxMoves, playerMoves)
+                      }
+                      if (boxMoves != 0) {
+                        throw new IllegalStateException("Sanity check failed for boxMoves: " + boxMoves)
+                      }
+                      if (playerMoves != 0) {
+                        throw new IllegalStateException("Sanity check failed for playerMoves: " + playerMoves)
+                      }
+                      d
                   }
                   memoized(key) = ret
                   print("stored; ")
