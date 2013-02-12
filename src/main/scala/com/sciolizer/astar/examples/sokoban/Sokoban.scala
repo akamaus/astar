@@ -94,7 +94,7 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
     } else if (s.boxes.subsetOf(s.goals)) {
       Finite(0, 0)
     } else {
-      if (memoized.size > lastPrint) {
+      if (memoized.size > lastPrint * 2) {
         println("memoized size: " + memoized.size)
         lastPrint = memoized.size
       }

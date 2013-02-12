@@ -50,4 +50,35 @@ class SokobanPuzzles extends FunSuite {
   test("Microban 2") {
     solve(Point(1, 2), Set(Point(2, 1), Point(2, 2), Point(3, 2)), microban2Board)
   }
+
+  test("Push block into block") {
+    val (grid, goals) = SokobanSuite.makeGrid(microban2Board)
+    val board: Board = Board(grid, goals, Set(Point(2, 1), Point(2, 2), Point(3, 2)), Point(2, 3))
+    assert(Left.toBoard(board) === None)
+  }
+
+  val microban3Board =
+    "  XXXX   \n" +
+    "XXX  XXXX\n" +
+    "X       X\n" +
+    "X X  X  X\n" +
+    "X G GX  X\n"
+
+  test("Microban 3") {
+    solve(Point(4, 6), Set(Point(3, 6), Point(2, 6)), microban3Board)
+  }
+
+  val microban35Board =
+    "XX  X \n" +
+    "XG  X \n" +
+    "XG  X \n" +
+    "XG  X \n" +
+    "XG  X \n" +
+    "XG  XX\n" +
+    "X    X\n" +
+    "XX   X\n"
+
+  test("Microban 35") {
+    solve(Point(6, 4), Set(Point(1, 3), Point(2, 2), Point(3, 2), Point(4, 2), Point(5, 3)), microban35Board)
+  }
 }
