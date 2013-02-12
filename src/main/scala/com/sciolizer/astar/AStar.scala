@@ -110,7 +110,7 @@ object AStar {
     // for tracking metrics, which we aren't using anyway.
     // Just don't call Node.pathCost, since it will always be 0.0
     val stepCostFunction = new StepCostFunction {
-      var limit = 800
+      var limit = 500
       def c(s: Any, a: Action, sDelta: Any): Double = {
         limit -= 1
         if (limit <= 0) {

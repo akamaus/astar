@@ -86,19 +86,24 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
 
   def comparator: Comparator[Distance] = c
 
+  var lastPrint = 0
+
   def heuristicFunction(s: Board): Distance = {
     val ret: Distance = if (s.boxes.isEmpty) {
       Finite(0, distanceMap(s.player))
     } else if (s.boxes.subsetOf(s.goals)) {
       Finite(0, 0)
     } else {
-      print("memoized size: " + memoized.size)
+      if (memoized.size > lastPrint) {
+        println("memoized size: " + memoized.size)
+        lastPrint = memoized.size
+      }
       memoized.get(Changeable(s.player, s.boxes)) match {
         case Some(h) =>
-          println("; direct hit")
+//          println("; direct hit")
           h
         case None =>
-          print("; miss; ")
+//          print("; miss; ")
           if (s.boxes.size == 1) {
             val box: Point = s.boxes.head
             if (box == s.player) {
@@ -109,7 +114,7 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
               throw new IllegalStateException("taxicab is zero: " + s.player + " and " + s.boxes)
             }
             val boxMoves: Int = distanceMap(box)
-            println("no store")
+//            println("no store")
             Finite(boxMoves, tc + boxMoves - 1)
           } else {
             def distanceOf(boxes: Set[Point]): Distance = {
@@ -117,10 +122,10 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
               val key: Changeable = Changeable(s.player, boxes)
               memoized.get(key) match {
                 case Some(h) =>
-                  print("inner hit; ")
+//                  print("inner hit; ")
                   h
                 case None =>
-                  print("inner miss; ")
+//                  print("inner miss; ")
                   val ret = AStar.search(subBoard, this) match {
                     case None =>
                       memoized(key) = Infinite()
@@ -147,14 +152,14 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
                       d
                   }
                   memoized(key) = ret
-                  print("stored; ")
+//                  print("stored; ")
                   ret
               }
             }
             val (left, right) = s.boxes.splitAt(s.boxes.size / 2)
             val dl = distanceOf(left)
             val dr = distanceOf(right)
-            println()
+//            println()
             add(dl, dr)
           }
       }
