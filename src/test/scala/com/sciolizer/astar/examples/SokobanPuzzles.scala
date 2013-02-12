@@ -13,42 +13,27 @@ import sokoban.Point
 class SokobanPuzzles extends FunSuite {
 
   def solve(player: Point, boxes: Set[Point], map: String) {
-    var grid: Vector[Vector[Square]] = Vector()
-    var row: Vector[Square] = Vector()
-    var goals: Set[Point] = Set()
-    var r = 0
-    var c = 0
-    for (ch <- map.toCharArray) {
-      if (ch == '\n') {
-        grid = grid :+ row
-        row = Vector()
-        r += 1
-        c = 0
-      } else {
-        if (ch == 'X') {
-          row = row :+ Wall
-        } else {
-          row = row :+ Blank
-          if (ch == 'G') {
-            goals = goals + Point(r, c)
-          } else if (ch != ' ') {
-            throw new IllegalArgumentException("Unexpected character in map: " + ch)
-          }
-        }
-        c += 1
-      }
-    }
+    val (grid, goals) = SokobanSuite.makeGrid(map)
     println(Sokoban.solve(Board(grid, goals, boxes, player)))
   }
 
   test("Microban 1") {
-    solve(Point(3, 2), Set(Point(3, 1), Point(4, 3)),
-      "XXXX  \n" +
-      "X GX  \n" +
-      "X  XXX\n" +
-      "XG   X\n" +
-      "X    X\n" +
-      "X  XXX\n" +
-      "XXXX  ")
+    solve(Point(3, 2), Set(Point(3, 1), Point(4, 3)), microban1Board)
   }
+
+  test("Microban half of 1") {
+    solve(Point(3, 2), Set(Point(4, 3)), microban1Board)
+    // This doesn't make sense: Priority is Distance(5,3) for List(right, right, down, left, up, left, down)
+    // This puts the box in the right side of the bottommost row, which, even though it's immovable, should
+    // be calculated as 3 moves away from a goal, not 5 moves. Also, player moves should ALWAYS be > than box moves.
+  }
+
+  val microban1Board =
+    "XXXX  \n" +
+    "X GX  \n" +
+    "X  XXX\n" +
+    "XG   X\n" +
+    "X    X\n" +
+    "X  XXX\n" +
+    "XXXX  "
 }

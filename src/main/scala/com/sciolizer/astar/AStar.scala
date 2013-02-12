@@ -44,7 +44,7 @@ object AStar {
     def isGoal(s: State): Boolean
   }
 
-  def search[State, Act, Measure](start: State, domain: SearchDomain[State, Act, Measure]): (List[Act], Measure) = {
+  def search[State, Act, Measure](start: State, domain: SearchDomain[State, Act, Measure]): Option[(List[Act], Measure)] = {
     case class ActionWrapper(action: Act) extends Action {
       def isNoOp: Boolean = false
     }
@@ -57,6 +57,17 @@ object AStar {
     def priority(n: Node): Measure = {
       val ret = domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
 //      println("priority " + nodeToString(n) + ": " + ret)
+      val path: util.List[Node] = n.getPathFromRoot
+      println("path from root: " + path)
+      def doesSomething(n: Node): Boolean = {
+        val action: Action = n.getAction
+//        if (action == null) {
+//          throw new NullPointerException("Action is null")
+//        }
+        action != null && !action.isNoOp
+      }
+      val filteredPath: List[Node] = path.toList.filter(doesSomething)
+      println("Priority is " + ret + " for " + filteredPath.map(_.getAction.asInstanceOf[ActionWrapper].action))
       ret
     }
     val comparator: Comparator[Node] = new Comparator[Node] {
@@ -99,19 +110,30 @@ object AStar {
     // for tracking metrics, which we aren't using anyway.
     // Just don't call Node.pathCost, since it will always be 0.0
     val stepCostFunction = new StepCostFunction {
-      def c(s: Any, a: Action, sDelta: Any): Double = 0.0
+      var limit = 100
+      def c(s: Any, a: Action, sDelta: Any): Double = {
+        limit -= 1
+        if (limit <= 0) {
+          throw new RuntimeException("search ran for too long")
+        }
+        0.0
+      }
     }
     val p = new Problem(start, actionsFunction, resultsFunction, goalTest, stepCostFunction)
     val actions = ass.search(p)
-    val acts = List.empty ++ actions.filter(!_.isNoOp).map(_.asInstanceOf[ActionWrapper].action)
-    var distance: Measure = domain.zero
-    var state: State = start
-    for (act <- acts) {
-      val (next, inc) = domain.children(state)(act)
-      state = next
-      distance = domain.add(distance, inc)
+    if (actions.isEmpty) {
+      None
+    } else {
+      val acts = List.empty ++ actions.filter(!_.isNoOp).map(_.asInstanceOf[ActionWrapper].action)
+      var distance: Measure = domain.zero
+      var state: State = start
+      for (act <- acts) {
+        val (next, inc) = domain.children(state)(act)
+        state = next
+        distance = domain.add(distance, inc)
+      }
+      Some((acts, distance))
     }
-    (acts, distance)
   }
 
   def nodeToString(n: Node): String = n.getPathFromRoot().map(_.getState()).toString()

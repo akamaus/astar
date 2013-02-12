@@ -13,9 +13,9 @@ import java.util.Comparator
  */
 object Sokoban {
 
-  def solve(board: Board): List[Direction] = {
+  def solve(board: Board): Option[List[Direction]] = {
     val domain = new SokobanDomain(board.squares, board.goals, makeDistanceMap(board.squares, board.goals))
-    AStar.search(board, domain)._1
+    for (s <- AStar.search(board, domain)) yield s._1
   }
 
   def makeDistanceMap(board: Vector[Vector[Square]], goals: Set[Point]): Map[Point, Int] = {
@@ -29,12 +29,15 @@ object Sokoban {
 
     var ret: Map[Point, Int] = Map.empty
     for (r <- 0 until board.size) {
-      for (c <- 0 until board.size) {
+      for (c <- 0 until board(r).size) {
         val point: Point = Point(r, c)
         ret = ret.updated(point, if (board(r)(c) == Wall) {
           Int.MaxValue
         } else {
-          AStar.search[Point, Direction, Int](point, DistanceDomain)._2
+          AStar.search[Point, Direction, Int](point, DistanceDomain) match {
+            case None => Int.MaxValue
+            case Some((_, d)) => d
+          }
         })
       }
     }
@@ -50,18 +53,33 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
   val memoized: mutable.Map[Changeable, Distance] = mutable.Map.empty
 
   def children(s: Board): Map[Direction, (Board, Distance)] =
-    (for (d <- Direction.all; if d.toBoard(s).isDefined) yield ((d, (d.toBoard(s).get,  Distance(if (d.movesBox(s)) 1 else 0, 0))))).toMap
+    (for (d <- Direction.all; if d.toBoard(s).isDefined) yield ((d, (d.toBoard(s).get,  Finite(if (d.movesBox(s)) 1 else 0, 0))))).toMap
   def heuristicGuarantee: HeuristicGuarantee = Admissable()
   def isGoal(s: Board): Boolean = s.goals == s.boxes
-  def zero: Distance = Distance(0, 0)
-  def add(m1: Distance, m2: Distance): Distance = Distance(m1.boxMoves + m2.boxMoves, m1.playerMoves + m2.playerMoves)
+  def zero: Distance = Finite(0, 0)
+  def add(m1: Distance, m2: Distance): Distance = {
+    (m1, m2) match {
+      case (Infinite(), _) => Infinite()
+      case (_, Infinite()) => Infinite()
+      case (Finite(bm1, pm1), Finite(bm2, pm2)) => {
+        val boxMoves: Int = bm1 + bm2
+        Finite(boxMoves, pm1 max pm2 max boxMoves)
+      }
+    }
+  }
 
   private lazy val c = new Comparator[Distance] {
     def compare(o1: Distance, o2: Distance): Int = {
-      if (o1.boxMoves != o2.boxMoves) {
-        math.signum(o1.boxMoves - o2.boxMoves)
-      } else {
-        math.signum(o1.playerMoves - o2.playerMoves)
+      (o1, o2) match {
+        case (Infinite(), Infinite()) => 0
+        case (Infinite(), Finite(_, _)) => 1
+        case (Finite(_, _), Infinite()) => -1
+        case (Finite(bm1, pm1), Finite(bm2, pm2)) =>
+          if (bm1 != bm2) {
+            math.signum(bm1 - bm2)
+          } else {
+            math.signum(pm1 - pm2)
+          }
       }
     }
   }
@@ -69,23 +87,36 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
   def comparator: Comparator[Distance] = c
 
   def heuristicFunction(s: Board): Distance = {
-    if (s.boxes.isEmpty) {
-      Distance(0, distanceMap(s.player))
+    val ret = if (s.boxes.isEmpty) {
+      Finite(0, distanceMap(s.player))
+    } else if (s.boxes.subsetOf(s.goals)) {
+      Finite(0, 0)
     } else {
       memoized.get(Changeable(s.player, s.boxes)) match {
         case Some(h) => h
         case None =>
           if (s.boxes.size == 1) {
             val box: Point = s.boxes.head
-            Distance(distanceMap(box), box.taxicab(s.player) - 1)
+            if (box == s.player) {
+              throw new IllegalStateException("impossible board: " + s.player + " and " + s.boxes)
+            }
+            val tc: Int = box.taxicab(s.player)
+            if (tc == 0) {
+              throw new IllegalStateException("taxicab is zero: " + s.player + " and " + s.boxes)
+            }
+            val boxMoves: Int = distanceMap(box)
+            Finite(boxMoves, tc + boxMoves - 1)
           } else {
             def distanceOf(boxes: Set[Point]): Distance = {
               val subBoard: Board = s.copy(boxes = boxes)
-              val key: SokobanDomain.this.type#Changeable = Changeable(s.player, boxes)
+              val key: Changeable = Changeable(s.player, boxes)
               memoized.get(key) match {
                 case Some(h) => h
                 case None =>
-                  val ret = AStar.search(subBoard, this)._2
+                  val ret = AStar.search(subBoard, this) match {
+                    case None => Infinite()
+                    case Some((_, d)) => d
+                  }
                   memoized(key) = ret
                   ret
               }
@@ -93,10 +124,12 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
             val (left, right) = s.boxes.splitAt(s.boxes.size / 2)
             val dl = distanceOf(left)
             val dr = distanceOf(right)
-            Distance(dl.boxMoves + dr.boxMoves, dl.playerMoves max dr.playerMoves)
+            add(dl, dr)
           }
       }
     }
+    println("heuristic is " + ret + " for " + s.player + " and " + s.boxes)
+    ret
   }
 
 }
@@ -115,7 +148,7 @@ abstract class Direction {
         if (board.get(nextNext) != Some(Blank) || board.boxes.contains(nextNext)) {
           None
         } else {
-          Some(board.copy(goals = board.goals - next + nextNext, player = next))
+          Some(board.copy(boxes = board.boxes - next + nextNext, player = next))
         }
       }
     }
@@ -130,17 +163,23 @@ object Direction {
 }
 object Up extends Direction {
   def toPoint(p: Point): Point = p.copy(row = p.row - 1)
+  override def toString: String = "up"
 }
 object Down extends Direction {
   def toPoint(p: Point): Point = p.copy(row = p.row + 1)
+  override def toString: String = "down"
 }
 object Left extends Direction {
   def toPoint(p: Point): Point = p.copy(column = p.column - 1)
+  override def toString: String = "left"
 }
 object Right extends Direction {
   def toPoint(p: Point): Point = p.copy(column = p.column + 1)
+  override def toString: String = "right"
 }
-case class Distance(boxMoves: Int, playerMoves: Int)
+abstract class Distance
+case class Finite(boxMoves: Int, playerMoves: Int) extends Distance
+case class Infinite() extends Distance
 
 case class Point(row: Int, column: Int) {
   def of(grid: Vector[Vector[Square]]): Option[Square] = for (r <- grid.lift(row); spot <- r.lift(column)) yield spot
