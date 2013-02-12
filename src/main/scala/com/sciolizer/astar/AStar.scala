@@ -27,6 +27,16 @@ object AStar {
     def comparator: Comparator[Measure]
   }
 
+  class IntMeasure extends MeasureDomain[Int] {
+    def zero: Int = 0
+    // We don't detect overflow, but we do treat Int.MaxValue like infinity.
+    def add(m1: Int, m2: Int): Int = if (m1 == Int.MaxValue || m2 == Int.MaxValue) Int.MaxValue else m1 + m2
+    def comparator: Comparator[Int] = c
+    lazy val c = new Comparator[Int] {
+      def compare(o1: Int, o2: Int): Int = math.signum(o2 - o1)
+    }
+  }
+
   trait SearchDomain[State, Action, Measure] extends MeasureDomain[Measure] {
     def children(s: State): Map[Action, (State, Measure)]
     def heuristicGuarantee: HeuristicGuarantee
@@ -42,7 +52,11 @@ object AStar {
     case class ActionWrapper(action: Act) extends Action {
       def isNoOp: Boolean = false
     }
-    def incCost(n: Node): Measure = domain.children(n.getState.asInstanceOf[State])(n.getAction.asInstanceOf[ActionWrapper].action)._2
+    def incCost(n: Node): Measure = {
+      val action: Act = n.getAction.asInstanceOf[ActionWrapper].action
+      val children: Map[Act, (State, Measure)] = domain.children(n.getParent.getState.asInstanceOf[State])
+      children(action)._2
+    }
     val costCalculator = new CostCalculator[Measure](domain, incCost)
     def priority(n: Node): Measure = {
       domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
