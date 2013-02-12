@@ -103,7 +103,7 @@ object AStar {
     }
     val p = new Problem(start, actionsFunction, resultsFunction, goalTest, stepCostFunction)
     val actions = ass.search(p)
-    val acts = List.empty ++ actions.map(_.asInstanceOf[ActionWrapper].action)
+    val acts = List.empty ++ actions.filter(!_.isNoOp).map(_.asInstanceOf[ActionWrapper].action)
     var distance: Measure = domain.zero
     var state: State = start
     for (act <- acts) {
