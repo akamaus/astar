@@ -1,7 +1,7 @@
 package com.sciolizer.astar.examples.sokoban
 
 import com.sciolizer.astar.AStar
-import com.sciolizer.astar.AStar.{SearchDomain, Admissable, HeuristicGuarantee}
+import com.sciolizer.astar.AStar.{IntMeasure, SearchDomain, Admissable, HeuristicGuarantee}
 import collection.mutable
 import java.util.Comparator
 
@@ -19,18 +19,12 @@ object Sokoban {
   }
 
   def makeDistanceMap(board: Vector[Vector[Square]], goals: Set[Point]): Map[Point, Int] = {
-    object DistanceDomain extends SearchDomain[Point, Direction, Int] {
+    object DistanceDomain extends IntMeasure with SearchDomain[Point, Direction, Int] {
       def children(s: Point): Map[Direction, (Point, Int)] =
         (for (d <- Direction.all; if d.toPoint(s).of(board) == Some(Blank)) yield (d, (d.toPoint(s), 1))).toMap
       def heuristicGuarantee: HeuristicGuarantee = Admissable()
       def heuristicFunction(s: Point): Int = goals.map(_.taxicab(s)).min
       def isGoal(s: Point): Boolean = goals.contains(s)
-      def zero: Int = 0
-      def add(m1: Int, m2: Int): Int = m1 + m2
-      lazy val c = new Comparator[Int] {
-        def compare(o1: Int, o2: Int): Int = math.signum(o2 - o1)
-      }
-      def comparator: Comparator[Int] = c
     }
 
     var ret: Map[Point, Int] = Map.empty
@@ -65,9 +59,9 @@ class SokobanDomain(grid: Vector[Vector[Square]], goals: Set[Point], distanceMap
   private lazy val c = new Comparator[Distance] {
     def compare(o1: Distance, o2: Distance): Int = {
       if (o1.boxMoves != o2.boxMoves) {
-        math.signum(o2.boxMoves - o1.boxMoves)
+        math.signum(o1.boxMoves - o2.boxMoves)
       } else {
-        math.signum(o2.playerMoves - o1.playerMoves)
+        math.signum(o1.playerMoves - o2.playerMoves)
       }
     }
   }

@@ -33,7 +33,7 @@ object AStar {
     def add(m1: Int, m2: Int): Int = if (m1 == Int.MaxValue || m2 == Int.MaxValue) Int.MaxValue else m1 + m2
     def comparator: Comparator[Int] = c
     lazy val c = new Comparator[Int] {
-      def compare(o1: Int, o2: Int): Int = math.signum(o2 - o1)
+      def compare(o1: Int, o2: Int): Int = math.signum(o1 - o2)
     }
   }
 
@@ -45,10 +45,6 @@ object AStar {
   }
 
   def search[State, Act, Measure](start: State, domain: SearchDomain[State, Act, Measure]): (List[Act], Measure) = {
-    val search = domain.heuristicGuarantee match {
-      case Admissable() => new GraphSearch()
-      case Consistent() => new TreeSearch()
-    }
     case class ActionWrapper(action: Act) extends Action {
       def isNoOp: Boolean = false
     }
@@ -59,10 +55,32 @@ object AStar {
     }
     val costCalculator = new CostCalculator[Measure](domain, incCost)
     def priority(n: Node): Measure = {
-      domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
+      val ret = domain.add(costCalculator.cost(n), domain.heuristicFunction(n.getState.asInstanceOf[State]))
+      println("priority " + nodeToString(n) + ": " + ret)
+      ret
     }
     val comparator: Comparator[Node] = new Comparator[Node] {
-      def compare(o1: Node, o2: Node): Int = domain.comparator.compare(priority(o1), priority(o2))
+      def compare(o1: Node, o2: Node): Int = {
+        val p1: Measure = priority(o1)
+        val p2: Measure = priority(o2)
+        val ret = domain.comparator.compare(p1, p2)
+        println("comparing " + p1 + " and " + p2 + ": " + ret)
+        ret
+      }
+    }
+    val search = domain.heuristicGuarantee match {
+      case Admissable() => {
+        val ret = new GraphSearch() {
+          override def expandNode(node: Node, problem: Problem): util.List[Node] = {
+            val ret = super.expandNode(node, problem)
+            println("expansion of " + nodeToString(node) + ": " + ret.map(nodeToString(_)))
+            ret
+          }
+        }
+//        ret.setReplaceFrontierNodeAtStateCostFunction(comparator) // This is already done by PrioritySearch
+        ret
+      }
+      case Consistent() => new TreeSearch()
     }
     val ass = new PrioritySearch(search, comparator)
     val actionsFunction = new ActionsFunction {
@@ -96,10 +114,12 @@ object AStar {
     (acts, distance)
   }
 
+  def nodeToString(n: Node): String = n.getPathFromRoot().map(_.getState()).toString()
+
   class CostCalculator[Measure](domain: MeasureDomain[Measure], incCost: Node => Measure) {
     val memoizedCost: mutable.Map[Node, Measure] = mutable.Map.empty
     def cost(n: Node): Measure = {
-      memoizedCost.get(n) match {
+      val ret = memoizedCost.get(n) match {
         case None =>
           val ret = if (n.isRootNode) {
             domain.zero
@@ -110,6 +130,8 @@ object AStar {
           ret
         case Some(x) => x
       }
+      println(nodeToString(n) + ": " + ret)
+      ret
     }
   }
 }

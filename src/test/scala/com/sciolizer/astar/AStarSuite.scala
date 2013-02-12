@@ -106,7 +106,7 @@ class AStarSuite extends FunSuite {
     class NumberManipulation extends IntMeasure with SearchDomain[Int, Operation, Int] {
       def children(s: Int): Map[Operation, (Int, Int)] = {
         var ret: Map[Operation, (Int, Int)] = Map.empty
-        if (s < 100) ret = ret + (DoubleIt() -> (s * 2, 1))
+        if (s < 53) ret = ret + (DoubleIt() -> (s * 2, 1))
         if (s > 0) ret = ret + (SubtractOne() -> (s - 1, 1))
         ret
       }
@@ -117,7 +117,7 @@ class AStarSuite extends FunSuite {
         val ret = if (s <= 0) {
           Int.MaxValue
         } else if (s < 26) {
-          math.floor(math.log(26 / s) / math.log(2)).toInt
+          math.floor(math.log(26.0 / s) / math.log(2)).toInt
         } else {
           s - 26
         }
