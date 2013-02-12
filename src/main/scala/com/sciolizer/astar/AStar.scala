@@ -114,7 +114,7 @@ object AStar {
       def c(s: Any, a: Action, sDelta: Any): Double = {
         limit -= 1
         if (limit <= 0) {
-          throw new RuntimeException("search ran for too long")
+//          throw new RuntimeException("search ran for too long")
         }
         0.0
       }

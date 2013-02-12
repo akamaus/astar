@@ -81,4 +81,17 @@ class SokobanPuzzles extends FunSuite {
   test("Microban 35") {
     solve(Point(6, 4), Set(Point(1, 3), Point(2, 2), Point(3, 2), Point(4, 2), Point(5, 3)), microban35Board)
   }
+
+  val original2Board =
+    "   X G \n" +
+    "  X  G \n" +
+    " X     \n" +
+    "X    XX\n" +
+    "    X  \n" +
+    "GG X   \n" +
+    "   X   \n"
+
+  test("Original 2") {
+    solve(Point(3, 3), Set(Point(1, 4), Point(2, 3), Point(3, 2), Point(4, 1)), original2Board)
+  }
 }
