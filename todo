@@ -1,0 +1,59 @@
+Take a look at http://weetu.net/Timo-Virkkala-Solving-Sokoban-Masters-Thesis.pdf
+
+Add a 'teleport' action, which teleports the player
+to any other position on the board which is reachable. This would half
+solve the problem of the really wide frontier. (It wouldn't work
+to unify all the different ways a player could push a block from
+one side to the other, though.)
+
+Other easy-to-implement ideas from the paper:
+
+A* on the one-box case can be used to detect dead spots.
+ (This would be better then programming a bunch of one-off detections,
+  like  XXXX
+        XB X
+        X GX
+        XXXX is unsolvable because it's "up against a wall"
+This could also be extended naturally to the two-box case to detect
+common blockage problems.
+
+But... aren't I already doing this? The memoization process will record
+infinities when it encounters them. So yeah.... guess I've already done
+this indirectly.
+
+One optimization I HAVEN'T done is to have search return all of the nodes
+in an unsolvable graph. If ANY of them are infinite, we should be able to
+mark ALL of them infinite. I bet the gains from this would be substantial.
+
+It still wouldn't be as effective as having a deadlock database that records,
+not impossible puzzle positions, but impossible subpuzzle positions (e.g.
+all rotations and flips of all 3x3 configurations).
+
+Instead of having Changeable contain the box locations and the
+player locations, it could contain the box locations and a "canonicalized"
+player location.... the leftmost uppermost point which is accessible
+from the current player's position without moving a box. This would
+cut down on the size of the memoization table substantially (roughly by
+a factor of n, where n is the number of empty squares on the grid).
+
+Higher philosophical rambling: can proof by resolution be used to prove
+that a particular position is in deadlock?
+
+Although I didn't notice it before, Sokoban is in the class of algorithms
+which is kind of informed-search and kind of a constraint-solving problem.
+Constraint solving problems are search problems where some non-deterministic
+choice can actually be deterministic... in most constraint solving problems
+this is which variable to look at next (which variable you pick might affect
+efficiency, but it will not affect completeness). Sokoban is almost in this
+category: in many cases it is sufficient to be thinking only about "the
+currently pushed stone", and not consider moves backward to the other stones
+until the current one has reached or is close to its goal position.
+Unfortunately, the boundary her is not crystal clear to me.
+
+
+A simple algorithm for detecting commutativity:
+Looking two moves ahead, anytime A . B is the same as B . A, add
+only one of them to the frontier. (Memoization will make the heuristic
+evaluation of one of them be cheap even without this optimization, but
+keeping both of them in the frontier can as much as double the search
+space.)
