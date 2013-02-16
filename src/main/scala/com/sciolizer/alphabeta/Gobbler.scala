@@ -61,6 +61,7 @@ class State(val board: Map[(Int, Int), List[Piece]] /* indices from (0, 0) to (2
     Some(new State(b, c, uc, unused - a.piece, 1 - nextPlayer))
   }
 
+  // todo: this doesn't filter out the second piece when the first piece is unused
   def moveable: Iterator[Piece] = (unused.iterator ++ uncovered.keys).filter(_.player == nextPlayer)
 
 }
