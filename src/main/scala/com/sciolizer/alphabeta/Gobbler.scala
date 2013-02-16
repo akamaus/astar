@@ -35,7 +35,7 @@ class GobblerGame extends Game[State, Action, Player] {
 
   def getActions(state: State): util.List[Action] = {
     val actions = if (state.nextPlayer == 0) Action.allFirst else Action.allSecond
-    (for (a <- actions; Some(s) <- List(getResultOption(state, a))) yield (a, s)).sortBy(x => unusedPieces(x._2)).map(_._1)
+    (for (a <- actions; Some(_) <- List(getResultOption(state, a))) yield a)
   }
 
   private def unusedPieces(state: State): Int = {
