@@ -43,7 +43,7 @@ class State(val board: Map[(Int, Int), Square] /* indices from (0, 0) to (2, 2) 
     Some(new State(board.updated(coord, Square(a.piece +: orig)), 1 - nextPlayer, c, ip, unused - a.piece))
   }
 
-  lazy val moveable: Set[Piece] = (inPlayOnTop ++ unused).filter(_.player == nextPlayer)
+  def moveable: Iterator[Piece] = (inPlayOnTop.iterator ++ unused.iterator).filter(_.player == nextPlayer)
 
 }
 
