@@ -15,8 +15,7 @@ object Piece {
   lazy val allFirst: List[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(0, s, w)).toList
   lazy val allSecond: List[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(1, s, w)).toList
 }
-case class Square(pieces: List[Piece] /* from largest to smallest */)
-case class State(board: Map[(Int, Int), Square] /* indices from (0, 0) to (2, 2) */, nextPlayer: Int)
+case class State(board: Map[(Int, Int), List[Piece]] /* indices from (0, 0) to (2, 2) */, nextPlayer: Int)
 case class Action(piece: Piece, where: (Int, Int))
 object Action {
   lazy val allCoordinates: List[(Int, Int)] = (for (r <- 0 until 3; c <- 0 until 3) yield (r, c)).toList
@@ -27,7 +26,7 @@ case class Player(player: Int /* 0 or 1 */)
 
 class GobblerGame extends Game[State, Action, Player] {
   def getInitialState: State =
-    State(Action.allCoordinates.map(x => x -> Square(List.empty)).toMap, 0)
+    State(Action.allCoordinates.map(x => x -> List.empty).toMap, 0)
 
   def getPlayers: Array[Player] = Array(Player(0), Player(1))
 
@@ -39,7 +38,7 @@ class GobblerGame extends Game[State, Action, Player] {
   }
 
   private def unusedPieces(state: State): Int = {
-    12 - state.board.map(x => x._2.pieces.size).sum
+    12 - state.board.map(x => x._2.size).sum
   }
 
   def getResult(state: State, action: Action): State = getResultOption(state, action).get
@@ -49,15 +48,14 @@ class GobblerGame extends Game[State, Action, Player] {
     val target = action.where
     var board = state.board
     for (coordinate <- Action.allCoordinates) {
-      val square = state.board(coordinate)
-      val pieces = square.pieces
+      val pieces = state.board(coordinate)
       if (coordinate == target) {
         if (pieces.contains(action.piece)) return None
-        board = board.updated(coordinate, Square(action.piece +: pieces))
+        board = board.updated(coordinate, action.piece +: pieces)
       } else {
         if (pieces.contains(action.piece)) {
           if (pieces.head == action.piece) {
-            board = board.updated(coordinate, Square(pieces.tail))
+            board = board.updated(coordinate, pieces.tail)
           } else {
             return None
           }
@@ -101,7 +99,7 @@ class GobblerGame extends Game[State, Action, Player] {
   private def player(state: State, cs: List[(Int, Int)]): Option[Int] = {
     var ret: Option[Int] = None
     for (c <- cs) {
-      val pieces = state.board(c).pieces
+      val pieces = state.board(c)
       if (pieces.isEmpty) return None
       val player = pieces.head.player
       if (ret == Some(1 - player)) {
