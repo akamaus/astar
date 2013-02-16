@@ -11,7 +11,7 @@ import com.sciolizer.alphabeta.State
  * Time: 9:44 AM
  */
 class GobblerSuite extends FunSuite {
-
+             /*
   val blank: State = new GobblerGame().getInitialState
 
   test("Terminal exists") {
@@ -36,5 +36,10 @@ class GobblerSuite extends FunSuite {
     val fstate = actions.foldLeft(gg.getInitialState)((s, act) => gg.getResult(s, act))
     assert(gg.isTerminal(fstate))
   }
-
+           */
+  test("Understanding vectors") {
+//    val v = new Vector[Int](0, 10, 9)
+    val v = (0 until 10).toVector
+    println(v)
+  }
 }
