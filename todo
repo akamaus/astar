@@ -57,3 +57,7 @@ only one of them to the frontier. (Memoization will make the heuristic
 evaluation of one of them be cheap even without this optimization, but
 keeping both of them in the frontier can as much as double the search
 space.)
+
+Perhaps it can be made faster by using a relaxed version of A*? (i.e. don't
+necessarilty try for the optimal solution... just use the heuristic to guide
+you in the direction of the correct answer)
