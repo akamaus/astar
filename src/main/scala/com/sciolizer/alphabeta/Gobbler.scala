@@ -11,6 +11,22 @@ import collection.JavaConversions._
  * Time: 8:40 AM
  */
 object Piece {
+  def name(piece: Int): String = {
+    if (piece == blueSmall0) return "blueSmall0"
+    if (piece == blueSmall1) return "blueSmall1"
+    if (piece == blueMedium0) return "blueMedium0"
+    if (piece == blueMedium1) return "blueMedium1"
+    if (piece == blueLarge0) return "blueLarge0"
+    if (piece == blueLarge1) return "blueLarge1"
+    if (piece == orangeSmall0) return "orangeSmall0"
+    if (piece == orangeSmall1) return "orangeSmall1"
+    if (piece == orangeMedium0) return "orangeMedium0"
+    if (piece == orangeMedium1) return "orangeMedium1"
+    if (piece == orangeLarge0) return "orangeLarge0"
+    if (piece == orangeLarge1) return "orangeLarge1"
+    throw new IllegalArgumentException("not a valid piece: " + piece)
+  }
+
   def isEmpty(pieces: Int): Boolean = pieces == 0
 
   def subtract(pieces: Int, piece: Int): Int = pieces & (~piece)
@@ -43,7 +59,11 @@ object Piece {
 }
 object State //(board: Map[(Int, Int), List[Piece]] /* indices from (0, 0) to (2, 2) */, nextPlayer: Int)
 // vector of ints, length 10: 0-8 are grid places, 9th is next player
-case class Action(piece: Int, where: Int)
+case class Action(piece: Int, where: Int) {
+  override def toString: String = {
+    "Action(" + Piece.name(piece) + ", " + (where / 3, where % 3) + ")"
+  }
+}
 object Action {
   lazy val allCoordinates: List[Int] = (0 until 9).toList
   lazy val allFirst: List[Action] = (for (p <- Piece.allFirst; c <- allCoordinates) yield Action(p, c)).toList
