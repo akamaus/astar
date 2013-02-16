@@ -3,6 +3,9 @@ package com.sciolizer.alphabeta
 import aima.core.search.adversarial.{IterativeDeepeningAlphaBetaSearch, AlphaBetaSearch, Game}
 import java.util
 import collection.JavaConversions._
+import collection.mutable
+import scala.math.Ordering.Implicits._
+import collection.immutable.TreeSet
 
 /**
  * Created with IntelliJ IDEA.
@@ -70,6 +73,49 @@ object Action {
   lazy val allSecond: List[Action] = (for (p <- Piece.allSecond; c <- allCoordinates) yield Action(p, c)).toList
 }
 case class Player(player: Int /* 0 or 1 */)
+case class CanonizedMove(originalMove: Action, canonical: List[Int]) {
+  override def hashCode(): Int = canonical.hashCode()
+  override def equals(obj: Any): Boolean = canonical == obj.asInstanceOf[CanonizedMove].canonical
+}
+class BoardCanon {
+  val memo: mutable.Map[List[Int], List[Int]] = mutable.Map.empty
+  def canonical(board: List[Int]): List[Int] = {
+    memo.get(board) match {
+      case Some(x) =>
+        x
+      case None =>
+        val boards = List(
+          board,
+          apply(board, BoardCanon.rotate90),
+          apply(board, BoardCanon.rotate180),
+          apply(board, BoardCanon.rotate270),
+          apply(board, BoardCanon.reflect),
+          apply(apply(board, BoardCanon.rotate90), BoardCanon.reflect),
+          apply(apply(board, BoardCanon.rotate180), BoardCanon.reflect),
+          apply(apply(board, BoardCanon.rotate270), BoardCanon.reflect)
+        )
+        val canonical = boards.sorted.head
+        for (modded <- boards) {
+          memo(modded) = canonical
+        }
+        canonical
+    }
+  }
+
+  private def apply(board: List[Int], change: List[Int]): List[Int] = {
+    var ret: List[Int] = List.empty
+    for (ind <- change) {
+      ret = ret :+ board(ind)
+    }
+    ret
+  }
+}
+object BoardCanon {
+  val rotate90: List[Int] = List(2, 5, 8, 1, 4, 7, 0, 3, 6)
+  val rotate180: List[Int] = List(8, 7, 6, 5, 4, 3, 2, 1, 0)
+  val rotate270: List[Int] = List(6, 3, 0, 7, 4, 1, 8, 5, 2)
+  val reflect: List[Int] = List(0, 3, 6, 1, 4, 7, 2, 5, 8)
+}
 
 class GobblerGame extends Game[Array[Int], Action, Player] {
   val playerIndex: Int = 9
@@ -101,7 +147,11 @@ class GobblerGame extends Game[Array[Int], Action, Player] {
   }
 
   def getActions(state: Array[Int]): util.List[Action] = {
-    (for (p <- getMoveablePieces(state, state(playerIndex)); c <- Action.allCoordinates; Some(_) <- List(getResultOption(state, Action(p, c)))) yield Action(p, c)).toList
+    val bc = new BoardCanon()
+    val canonized: Set[CanonizedMove] = (for (p <- getMoveablePieces(state, state(playerIndex));
+          c <- Action.allCoordinates;
+          Some(b) <- List(getResultOption(state, Action(p, c)))) yield CanonizedMove(Action(p, c), bc.canonical(b.toList))).toSet
+    canonized.toList.map(_.originalMove)
   }
 
 //  private def unusedPieces(state: Array[Int]): Int = {
@@ -117,7 +167,7 @@ class GobblerGame extends Game[Array[Int], Action, Player] {
     for (coordinate <- Action.allCoordinates) {
       val pieces = state(coordinate)
       if (coordinate == target) {
-        if (Piece.contains(pieces, action.piece)) return None
+        if (Piece.contains(pieces, action.piece)) return None // skip no-ops
         newState(coordinate) = Piece.insert(pieces, action.piece)
       } else {
         if (Piece.contains(action.piece, pieces)) {
