@@ -53,8 +53,8 @@ object Piece {
   val orangeMedium1 = 1 << 9
   val orangeLarge0 = 1 << 10
   val orangeLarge1 = 1 << 11
-  lazy val allFirst: List[Int] = List(blueSmall0, blueSmall1, blueMedium0, blueMedium1, blueLarge0, blueLarge1)
-  lazy val allSecond: List[Int] = List(orangeSmall0, orangeSmall1, orangeMedium0, orangeMedium1, orangeLarge0, orangeLarge1)
+  lazy val allFirst: Set[Int] = Set(blueSmall0, blueSmall1, blueMedium0, blueMedium1, blueLarge0, blueLarge1)
+  lazy val allSecond: Set[Int] = Set(orangeSmall0, orangeSmall1, orangeMedium0, orangeMedium1, orangeLarge0, orangeLarge1)
   def player(piece: Int): Int = if (piece < orangeSmall0) 0 else 1
 }
 object State //(board: Map[(Int, Int), List[Piece]] /* indices from (0, 0) to (2, 2) */, nextPlayer: Int)
@@ -81,10 +81,27 @@ class GobblerGame extends Game[Array[Int], Action, Player] {
   def getPlayer(state: Array[Int]): Player = Player(state(playerIndex))
 
   def nextPlayer(state: Array[Int]): Int = state(playerIndex)
+  
+  def isUnused(state: Array[Int], piece: Int): Boolean = {
+    (0 until 9).forall(x => !Piece.contains(state(x), piece))
+  }
+  
+  def getMoveablePieces(state: Array[Int], player: Int): Iterator[Int] = {
+    var ret = if (player == 0) Piece.allFirst else Piece.allSecond
+    if (player == 0) {
+      if (isUnused(state, Piece.blueSmall0)) ret -= Piece.blueSmall1
+      if (isUnused(state, Piece.blueMedium0)) ret -= Piece.blueMedium1
+      if (isUnused(state, Piece.blueLarge0)) ret -= Piece.blueLarge1
+    } else {
+      if (isUnused(state, Piece.orangeSmall0)) ret -= Piece.orangeSmall1
+      if (isUnused(state, Piece.orangeMedium0)) ret -= Piece.orangeMedium1
+      if (isUnused(state, Piece.orangeLarge0)) ret -= Piece.orangeLarge1
+    }
+    ret.iterator
+  }
 
   def getActions(state: Array[Int]): util.List[Action] = {
-    val actions = if (nextPlayer(state) == 0) Action.allFirst else Action.allSecond
-    (for (a <- actions; Some(_) <- List(getResultOption(state, a))) yield a)
+    (for (p <- getMoveablePieces(state, state(playerIndex)); c <- Action.allCoordinates; Some(_) <- List(getResultOption(state, Action(p, c)))) yield Action(p, c)).toList
   }
 
 //  private def unusedPieces(state: Array[Int]): Int = {
