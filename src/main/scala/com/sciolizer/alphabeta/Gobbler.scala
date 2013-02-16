@@ -15,7 +15,6 @@ object Piece {
   lazy val allFirst: Set[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(0, s, w)).toSet
   lazy val allSecond: Set[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(1, s, w)).toSet
 }
-case class Square(pieces: List[Piece] /* from largest to smallest */)
 case class Action(piece: Piece, where: (Int, Int))
 object Action {
   lazy val allCoordinates: List[(Int, Int)] = (for (r <- 0 until 3; c <- 0 until 3) yield (r, c)).toList
@@ -23,33 +22,52 @@ object Action {
   lazy val allSecond: Set[Action] = (for (p <- Piece.allSecond; c <- allCoordinates) yield Action(p, c)).toSet
 }
 case class Player(player: Int /* 0 or 1 */)
+abstract class Spot
+case class Unused() extends Spot
+case class InGrid(coord: (Int, Int), covered: Boolean) extends Spot
 
-class State(val board: Map[(Int, Int), Square] /* indices from (0, 0) to (2, 2) */,
-            val nextPlayer: Int,
-//            firstPieces: Set[Piece],
-//            secondPieces: Set[Piece],
-            covered: Set[Piece],
-            inPlayOnTop: Set[Piece],
-            unused: Set[Piece]) {
+class State(val board: Map[(Int, Int), List[Piece]] /* indices from (0, 0) to (2, 2) */,
+            val covered: Map[Piece, (Int, Int)],
+            val uncovered: Map[Piece, (Int, Int)],
+            val unused: Set[Piece], // replace with Vector of bools?
+            val nextPlayer: Int) {
 
   def move(a: Action): Option[State] = {
-    val coord = a.where
-    val orig = board(coord).pieces
-    val (c, ip) = if (orig.isEmpty) (covered, inPlayOnTop) else {
-      val head = orig.head
-      if (head.size >= a.piece.size) return None
-      (covered + head, inPlayOnTop - head)
+    if (covered.contains(a.piece)) return None
+    val targetPieces = board(a.where)
+    if (!targetPieces.isEmpty && targetPieces.head.size >= a.piece.size) return None
+    var b: Map[(Int, Int), List[Piece]] = board
+    var c: Map[Piece, (Int, Int)] = covered
+    var uc: Map[Piece, (Int, Int)] = uncovered
+    uncovered.get(a.piece) match {
+      case None => // piece is unused
+      case Some(coord) =>
+        val underneath = b(coord).tail
+        b = b.updated(coord, underneath)
+        if (!underneath.isEmpty) {
+          val newTop = underneath.head
+          c -= newTop
+          uc += (newTop -> coord)
+        }
     }
-    Some(new State(board.updated(coord, Square(a.piece +: orig)), 1 - nextPlayer, c, ip, unused - a.piece))
+    val orig = b(a.where)
+    if (!orig.isEmpty) {
+      val oldTop = orig.head
+      uc -= oldTop
+      c += (oldTop -> a.where)
+    }
+    b = b.updated(a.where, a.piece +: b(a.where))
+    uc = uc.updated(a.piece, a.where)
+    Some(new State(b, c, uc, unused - a.piece, 1 - nextPlayer))
   }
 
-  def moveable: Iterator[Piece] = (inPlayOnTop.iterator ++ unused.iterator).filter(_.player == nextPlayer)
+  def moveable: Iterator[Piece] = (unused.iterator ++ uncovered.keys).filter(_.player == nextPlayer)
 
 }
 
 class GobblerGame extends Game[State, Action, Player] {
   def getInitialState: State =
-    new State(Action.allCoordinates.map(x => x -> Square(List.empty)).toMap, 0, Set.empty, Set.empty, Piece.allFirst ++ Piece.allSecond)
+    new State(Action.allCoordinates.map(x => x -> List.empty).toMap, Map.empty, Map.empty, Piece.allFirst ++ Piece.allSecond, 0)
 
   def getPlayers: Array[Player] = Array(Player(0), Player(1))
 
@@ -96,7 +114,7 @@ class GobblerGame extends Game[State, Action, Player] {
   private def player(state: State, cs: List[(Int, Int)]): Option[Int] = {
     var ret: Option[Int] = None
     for (c <- cs) {
-      val pieces = state.board(c).pieces
+      val pieces = state.board(c)
       if (pieces.isEmpty) return None
       val player = pieces.head.player
       if (ret == Some(1 - player)) {
