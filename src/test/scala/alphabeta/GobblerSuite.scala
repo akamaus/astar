@@ -13,14 +13,15 @@ import com.sciolizer.alphabeta.Square
  */
 class GobblerSuite extends FunSuite {
 
-  val blank: State = State(Action.allCoordinates.map(c => c -> Square(List.empty)).toMap, 0)
+  val blank: State = new GobblerGame().getInitialState
 
   test("Terminal exists") {
     val gg = new GobblerGame()
-    val state = blank.copy(board = blank.board ++ Map((0, 0) -> Square(List(Piece(0, 0, 0))),
-                          (0, 1) -> Square(List(Piece(0, 0, 1))),
-                          (0, 2) -> Square(List(Piece(0, 1, 0)))))
-    assert(gg.isTerminal(state))
+//    val state = blank.copy(board = blank.board ++ Map((0, 0) -> Square(List(Piece(0, 0, 0))),
+//                          (0, 1) -> Square(List(Piece(0, 0, 1))),
+//                          (0, 2) -> Square(List(Piece(0, 1, 0)))))
+//    assert(gg.isTerminal(state))
+    assert(false)
   }
 
   test("Terminal reachable") {

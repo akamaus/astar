@@ -12,60 +12,54 @@ import collection.JavaConversions._
  */
 case class Piece(player: Int /* 0 or 1 */, size: Int /* 0-smallest, 1, or 2-largest */, which: Int /* 0 or 1 */)
 object Piece {
-  lazy val allFirst: List[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(0, s, w)).toList
-  lazy val allSecond: List[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(1, s, w)).toList
+  lazy val allFirst: Set[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(0, s, w)).toSet
+  lazy val allSecond: Set[Piece] = (for (s <- 0 until 3; w <- 0 until 2) yield Piece(1, s, w)).toSet
 }
 case class Square(pieces: List[Piece] /* from largest to smallest */)
-case class State(board: Map[(Int, Int), Square] /* indices from (0, 0) to (2, 2) */, nextPlayer: Int)
 case class Action(piece: Piece, where: (Int, Int))
 object Action {
   lazy val allCoordinates: List[(Int, Int)] = (for (r <- 0 until 3; c <- 0 until 3) yield (r, c)).toList
-  lazy val allFirst: List[Action] = (for (p <- Piece.allFirst; c <- allCoordinates) yield Action(p, c)).toList
-  lazy val allSecond: List[Action] = (for (p <- Piece.allSecond; c <- allCoordinates) yield Action(p, c)).toList
+  lazy val allFirst: Set[Action] = (for (p <- Piece.allFirst; c <- allCoordinates) yield Action(p, c)).toSet
+  lazy val allSecond: Set[Action] = (for (p <- Piece.allSecond; c <- allCoordinates) yield Action(p, c)).toSet
 }
 case class Player(player: Int /* 0 or 1 */)
 
+class State(val board: Map[(Int, Int), Square] /* indices from (0, 0) to (2, 2) */,
+            val nextPlayer: Int,
+//            firstPieces: Set[Piece],
+//            secondPieces: Set[Piece],
+            covered: Set[Piece],
+            inPlayOnTop: Set[Piece],
+            unused: Set[Piece]) {
+
+  def move(a: Action): Option[State] = {
+    val coord = a.where
+    val orig = board(coord).pieces
+    val (c, ip) = if (orig.isEmpty) (covered, inPlayOnTop) else {
+      val head = orig.head
+      if (head.size >= a.piece.size) return None
+      (covered + head, inPlayOnTop - head)
+    }
+    Some(new State(board.updated(coord, Square(a.piece +: orig)), 1 - nextPlayer, c, ip, unused - a.piece))
+  }
+
+  lazy val moveable: Set[Piece] = (inPlayOnTop ++ unused).filter(_.player == nextPlayer)
+
+}
+
 class GobblerGame extends Game[State, Action, Player] {
   def getInitialState: State =
-    State(Action.allCoordinates.map(x => x -> Square(List.empty)).toMap, 0)
+    new State(Action.allCoordinates.map(x => x -> Square(List.empty)).toMap, 0, Set.empty, Set.empty, Piece.allFirst ++ Piece.allSecond)
 
   def getPlayers: Array[Player] = Array(Player(0), Player(1))
 
   def getPlayer(state: State): Player = Player(state.nextPlayer)
 
   def getActions(state: State): util.List[Action] = {
-    val actions = if (state.nextPlayer == 0) Action.allFirst else Action.allSecond
-    (for (a <- actions; Some(_) <- List(getResultOption(state, a))) yield a)
+    (for (p <- state.moveable; c <- Action.allCoordinates; Some(_) <- List(state.move(Action(p, c)))) yield Action(p, c)).toList
   }
 
-  private def unusedPieces(state: State): Int = {
-    12 - state.board.map(x => x._2.pieces.size).sum
-  }
-
-  def getResult(state: State, action: Action): State = getResultOption(state, action).get
-
-  private def getResultOption(state: State, action: Action): Option[State] = {
-    if (action.piece.player != state.nextPlayer) return None
-    val target = action.where
-    var board = state.board
-    for (coordinate <- Action.allCoordinates) {
-      val square = state.board(coordinate)
-      val pieces = square.pieces
-      if (coordinate == target) {
-        if (pieces.contains(action.piece)) return None
-        board = board.updated(coordinate, Square(action.piece +: pieces))
-      } else {
-        if (pieces.contains(action.piece)) {
-          if (pieces.head == action.piece) {
-            board = board.updated(coordinate, Square(pieces.tail))
-          } else {
-            return None
-          }
-        }
-      }
-    }
-    Some(State(board, 1 - state.nextPlayer))
-  }
+  def getResult(state: State, action: Action): State = state.move(action).get
 
   def isTerminal(state: State): Boolean = {
     winner(state) match {
@@ -88,7 +82,8 @@ class GobblerGame extends Game[State, Action, Player] {
     def check(coords: List[(Int, Int)]) {
       player(state, coords) match {
         case None =>
-        case Some(x) => ret = ret.updated(x, true)
+        case Some(x) =>
+          ret = ret.updated(x, true)
       }
     }
     for (row <- 0 until 3) check(List((row, 0), (row, 1), (row, 2)))
