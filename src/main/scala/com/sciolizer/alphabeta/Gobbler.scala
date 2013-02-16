@@ -71,59 +71,60 @@ object Action {
 }
 case class Player(player: Int /* 0 or 1 */)
 
-class GobblerGame extends Game[Vector[Int], Action, Player] {
+class GobblerGame extends Game[Array[Int], Action, Player] {
   val playerIndex: Int = 9
 
-  def getInitialState: Vector[Int] = List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0).toVector
+  def getInitialState: Array[Int] = List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0).toArray
 
   def getPlayers: Array[Player] = Array(Player(0), Player(1))
 
-  def getPlayer(state: Vector[Int]): Player = Player(state(playerIndex))
+  def getPlayer(state: Array[Int]): Player = Player(state(playerIndex))
 
-  def nextPlayer(state: Vector[Int]): Int = state(playerIndex)
+  def nextPlayer(state: Array[Int]): Int = state(playerIndex)
 
-  def getActions(state: Vector[Int]): util.List[Action] = {
+  def getActions(state: Array[Int]): util.List[Action] = {
     val actions = if (nextPlayer(state) == 0) Action.allFirst else Action.allSecond
     (for (a <- actions; Some(_) <- List(getResultOption(state, a))) yield a)
   }
 
-//  private def unusedPieces(state: Vector[Int]): Int = {
+//  private def unusedPieces(state: Array[Int]): Int = {
 //    12 - state.board.map(x => x._2.size).sum
 //  }
 
-  def getResult(state: Vector[Int], action: Action): Vector[Int] = getResultOption(state, action).get
+  def getResult(state: Array[Int], action: Action): Array[Int] = getResultOption(state, action).get
 
-  private def getResultOption(state: Vector[Int], action: Action): Option[Vector[Int]] = {
+  private def getResultOption(state: Array[Int], action: Action): Option[Array[Int]] = {
     if (Piece.player(action.piece) != nextPlayer(state)) return None
     val target = action.where
-    var newState = state
+    var newState = state.clone()
     for (coordinate <- Action.allCoordinates) {
       val pieces = state(coordinate)
       if (coordinate == target) {
         if (Piece.contains(pieces, action.piece)) return None
-        newState = newState.updated(coordinate, Piece.insert(pieces, action.piece))
+        newState(coordinate) = Piece.insert(pieces, action.piece)
       } else {
         if (Piece.contains(action.piece, pieces)) {
           val largest = Piece.largest(pieces)
           if (largest == action.piece) {
-            newState = newState.updated(coordinate, Piece.subtract(pieces, largest))
+            newState(coordinate) = Piece.subtract(pieces, largest)
           } else {
             return None
           }
         }
       }
     }
-    Some(newState.updated(playerIndex, 1 - newState(playerIndex)))
+    newState(playerIndex) = 1 - newState(playerIndex)
+    Some(newState)
   }
 
-  def isTerminal(state: Vector[Int]): Boolean = {
+  def isTerminal(state: Array[Int]): Boolean = {
     winner(state) match {
       case (false, false) => false
       case _ => true
     }
   }
 
-  def getUtility(state: Vector[Int], player: Player): Double = {
+  def getUtility(state: Array[Int], player: Player): Double = {
     winner(state) match {
       case (false, false) => throw new IllegalArgumentException("game is not terminal")
       case (true, false) => if (player.player == 0) 1 else -1
@@ -132,7 +133,7 @@ class GobblerGame extends Game[Vector[Int], Action, Player] {
     }
   }
 
-  private def winner(state: Vector[Int]): (Boolean, Boolean) = {
+  private def winner(state: Array[Int]): (Boolean, Boolean) = {
     var ret = List(false, false)
     def check(coords: List[Int]) {
       player(state, coords) match {
@@ -147,7 +148,7 @@ class GobblerGame extends Game[Vector[Int], Action, Player] {
     (ret(0), ret(1))
   }
 
-  private def player(state: Vector[Int], cs: List[Int]): Option[Int] = {
+  private def player(state: Array[Int], cs: List[Int]): Option[Int] = {
     var ret: Option[Int] = None
     for (c <- cs) {
       val pieces = state(c)
