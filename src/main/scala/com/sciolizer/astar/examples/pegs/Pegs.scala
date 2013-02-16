@@ -58,10 +58,11 @@ class Pegs(hole: Point, pegs: Set[Point]) {
   }
 
   lazy val solution: Option[List[Move]] = {
-    DepthFirst.search(pegs, new PegsDomain()) match {
-      case None => None
-      case Some((x, _)) => Some(x)
-    }
+    throw new NotImplementedError()
+//    DepthFirst.search(pegs, new PegsDomain()) match {
+//      case None => None
+//      case Some((x, _)) => Some(x)
+//    }
   }
 }
 

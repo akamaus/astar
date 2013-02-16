@@ -24,12 +24,12 @@ object DepthFirst {
   }
 
   def search[State, Act](start: State, searchDomain: UninformedSearch[State, Act]): Option[List[Act]] = {
-    val actionsFunction = new ActionsFunction {
+    val actionsFunction = throw new NotImplementedError() /* new ActionsFunction {
       def actions(s: Any): util.Set[Action] = searchDomain.children(s.asInstanceOf[State]).keySet.map[ActionWrapper, Set[agent.Action]](ActionWrapper(_))
-    }
-    val resultFunction = new ResultFunction {
+    } */
+    val resultFunction = throw new NotImplementedError() /* new ResultFunction {
       def result(s: Any, a: Action): AnyRef = searchDomain.children(s.asInstanceOf[State])(a.asInstanceOf[ActionWrapper].act)
-    }
+    } */
     val goalTest = new GoalTest {
       def isGoalState(state: Any): Boolean = searchDomain.isGoal(state.asInstanceOf[State])
     }
@@ -39,7 +39,8 @@ object DepthFirst {
     if (ret.isEmpty) {
       None
     } else {
-      Some(ret.map(_.asInstanceOf[ActionWrapper].act))
+//      Some(ret.map(_.asInstanceOf[ActionWrapper].act))
+      throw new NotImplementedError()
     }
   }
 }
